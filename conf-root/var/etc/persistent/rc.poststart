@@ -1,0 +1,67 @@
+#!/bin/sh
+
+# If you have a site prefix, add that here.
+#SITE_PREFIX="fd00::"
+#FULL_SITE_PREFIX="fd00::/56"
+
+WIFI_MAC="`ifconfig ath0 | grep HWaddr | awk '{ print $5 }'`"
+
+should_use_ipv6() { true; }
+
+if [ -s /etc/persistent/.ssh/authorized_keys ]
+then
+  mkdir -p /etc/dropbear
+  cp /etc/persistent/.ssh/authorized_keys /etc/dropbear/authorized_keys
+  chmod 755 /etc/dropbear
+  chmod 644 /etc/dropbear/authorized_keys
+  chmod 755 /etc/persistent/.ssh/authorized_keys
+  chmod 644 /etc/persistent/.ssh/authorized_keys
+fi
+
+printslaacaddr_helper() {
+	local prefix=$1
+	shift
+	if test $# -eq 8
+	then printf "%s:%02X%02X:%02X%02X:%02X%02X:%02X%02X\n" "$prefix" $((`printf "%d" 0x$1` ^ 2)) 0x$2 0x$3 0x$4 0x$5 0x$6 0x$7 0x$8
+	else printf "%s:%02X%02X:%02XFF:FE%02X:%02X%02X\n" "$prefix" $((`printf "%d" 0x$1` ^ 2)) 0x$2 0x$3 0x$4 0x$5 0x$6
+	fi
+}
+
+printslaacaddr() {
+  if test $# -eq 1
+  then printslaacaddr_helper FE80: $(echo $1 | sed 's/://g;s/-//g;' | sed 's/\([0-9a-fA-F][0-9a-fA-F]\)/\1 /g')
+  elif test $# -eq 2
+  then printslaacaddr_helper $2 $(echo $1 | sed 's/://g;s/-//g;' | sed 's/\([0-9a-fA-F][0-9a-fA-F]\)/\1 /g')
+  fi
+}
+
+# Fix for stupid bizzare bug at the end of the script which causes errors to be emitted.
+if [ -s "/etc/crontabs/$USER" ]
+then
+	sed -i 's/hourly_cf_count.sh$/hourly_cf_count.sh ; true/' /etc/crontabs/$USER
+	crontab -u $USER /etc/crontabs/$USER
+fi
+
+if should_use_ipv6
+then
+  echo WIFI_MAC "$WIFI_MAC"
+  ip -6 address add dev ath0 scope link "$(printslaacaddr $WIFI_MAC)/64"
+  if [ -n "$FULL_SITE_PREFIX" ]
+  then
+    ip -6 addrlabel add prefix "$FULL_SITE_PREFIX" label 128
+    ip -6 address add dev ath0 scope global "$(printslaacaddr $WIFI_MAC $SITE_PREFIX)/64"
+    ip -6 route add default via "$SITE_PREFIX::1"
+  fi
+  grep 'server\.use-ipv6' /etc/lighttpd.conf 2>/dev/null 1>/dev/null ||
+    echo 'server.use-ipv6 = "enable"'  >> /etc/lighttpd.conf
+  grep 'server\.set-v6only' /etc/lighttpd.conf 2>/dev/null 1>/dev/null ||
+    echo 'server.set-v6only = "disable"' >> /etc/lighttpd.conf
+
+  killall lighttpd
+fi
+
+# Start smcpd
+grep 'smcpd' /etc/inittab 2>/dev/null 1>/dev/null ||
+echo null::respawn:/etc/persistent/bin/smcpd -c /etc/persistent/smcpd.conf >> /etc/inittab
+kill -hup 1
+
