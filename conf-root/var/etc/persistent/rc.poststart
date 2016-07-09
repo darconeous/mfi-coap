@@ -60,8 +60,67 @@ then
   killall lighttpd
 fi
 
+
+# Generate a new smcpd.conf
+cp /etc/persistent/smcpd.conf /etc/smcpd.conf
+
+if [ -d /proc/led ] ;
+then (
+	echo '<node "led">'
+	for file in `find /proc/led`
+	do printf '\t<node "%s" "ud_var" "%s" />\n' "`basename "${file}"`" "${file}"
+	done
+	echo '</node>'
+	) >> /etc/smcpd.conf
+fi
+
+if [ -d /proc/gpio ] ;
+then (
+	echo '<node "gpio">'
+	for file in `find /proc/gpio`
+	do printf '\t<node "%s" "ud_var" "%s" />\n' "`basename "${file}"`" "${file}"
+	done
+	echo '</node>'
+	) >> /etc/smcpd.conf
+fi
+
+if [ -d /proc/analog ] ;
+then (
+	echo '<node "analog">'
+	for file in `find /proc/analog`
+	do printf '\t<node "%s" "ud_var" "%s" />\n' "`basename "${file}"`" "${file}"
+	done
+	echo '</node>'
+	) >> /etc/smcpd.conf
+fi
+
+
+
+if [ -d /proc/power ] ;
+then (
+	echo '<node "pwr">'
+	for file in `find /proc/power -name '*_max' -o -name '*_min'`
+	do printf '\t<node "%s" "ud_var" "%s" />\n' "`basename "${file}"`" "${file}"
+	done
+	echo '</node>'
+	) >> /etc/smcpd.conf
+fi
+
+for i in 1 2 3 4 5 6 7 8
+do
+	if [ -f /proc/power/output$i ] ;
+	then (
+		echo '<node "1">'
+		for file in `find /proc/power -name '*'$i | grep -v raw_`
+		do printf '\t<node "%s" "ud_var" "%s" />\n' "`basename "${file}" | sed 's/'$i'$//'`" "${file}"
+		done
+		echo '</node>'
+		) >> /etc/smcpd.conf
+	fi
+done
+
 # Start smcpd
 grep 'smcpd' /etc/inittab 2>/dev/null 1>/dev/null ||
-echo null::respawn:/etc/persistent/bin/smcpd -c /etc/persistent/smcpd.conf >> /etc/inittab
+echo null::respawn:/etc/persistent/bin/smcpd -c /etc/smcpd.conf >> /etc/inittab
 kill -hup 1
 
