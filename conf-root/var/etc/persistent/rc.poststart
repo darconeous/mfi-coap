@@ -67,7 +67,7 @@ cp /etc/persistent/smcpd.conf /etc/smcpd.conf
 if [ -d /proc/led ] ;
 then (
 	echo '<node "led">'
-	for file in `find /proc/led`
+	for file in `find /proc/led -type f`
 	do printf '\t<node "%s" "ud_var" "%s" />\n' "`basename "${file}"`" "${file}"
 	done
 	echo '</node>'
@@ -77,7 +77,7 @@ fi
 if [ -d /proc/gpio ] ;
 then (
 	echo '<node "gpio">'
-	for file in `find /proc/gpio`
+	for file in `find /proc/gpio -type f`
 	do printf '\t<node "%s" "ud_var" "%s" />\n' "`basename "${file}"`" "${file}"
 	done
 	echo '</node>'
@@ -87,7 +87,7 @@ fi
 if [ -d /proc/analog ] ;
 then (
 	echo '<node "analog">'
-	for file in `find /proc/analog`
+	for file in `find /proc/analog -type f`
 	do printf '\t<node "%s" "ud_var" "%s" />\n' "`basename "${file}"`" "${file}"
 	done
 	echo '</node>'
@@ -111,7 +111,7 @@ do
 	if [ -f /proc/power/output$i ] ;
 	then (
 		echo '<node "1">'
-		for file in `find /proc/power -name '*'$i | grep -v raw_`
+		for file in `find /proc/power -name '*'$i -type f | grep -v raw_`
 		do printf '\t<node "%s" "ud_var" "%s" />\n' "`basename "${file}" | sed 's/'$i'$//'`" "${file}"
 		done
 		echo '</node>'
