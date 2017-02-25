@@ -13,15 +13,13 @@ smcp/configure: smcp/configure.ac smcp/docs/Makefile.am smcp/Makefile.am smcp/sr
 
 build/smcp/config.status: smcp/configure Makefile
 	mkdir -p build/smcp
-	cd build/smcp && ../../smcp/configure CFLAGS=-Os --host=$(HOST) host_alias=$(HOST) $(LINKING_FLAGS)  --prefix=/var/etc/persistent --sbindir=/var/etc/persistent/bin --sysconfdir=/var/etc/persistent/ --localstatedir=/var
+	cd build/smcp && ../../smcp/configure --disable-plugtest --disable-examples CFLAGS=-Os --host=$(HOST) host_alias=$(HOST) $(LINKING_FLAGS)  --prefix=/var/etc/persistent --sbindir=/var/etc/persistent/bin --sysconfdir=/var/etc/persistent/ --localstatedir=/var
 
 smcp-build: build/smcp/config.status
 	$(MAKE) -C build/smcp install DESTDIR=`pwd`/build/root
 
 strip-root:
 	-find `pwd`/build/root | xargs $(HOST)-strip 2> /dev/null
-	$(RM) build/root/var/etc/persistent/bin/smcp-plugtest-client
-	$(RM) build/root/var/etc/persistent/bin/smcp-plugtest-server
 	$(RM) -fr build/root/var/etc/persistent/include
 	-$(RM) -f build/root/var/etc/persistent/lib/libsmcp.la
 	-$(RM) -f build/root/var/etc/persistent/lib/libsmcp.a
