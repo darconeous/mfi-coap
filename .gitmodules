@@ -1,3 +1,6 @@
 [submodule "smcp"]
 	path = smcp
 	url = ../smcp
+[submodule "libnyoci"]
+	path = libnyoci
+	url = https://github.com/darconeous/libnyoci

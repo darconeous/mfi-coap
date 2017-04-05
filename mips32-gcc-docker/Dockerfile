@@ -40,6 +40,10 @@ USER root
 RUN rm -fr ct-ng-build
 
 RUN DEBIAN_FRONTEND=noninteractive \
-		apt-get -y remove dpkg-dev gperf bison flex libtool-bin ncurses-dev
+		apt-get -y remove dpkg-dev gperf bison flex ncurses-dev
 
+RUN DEBIAN_FRONTEND=noninteractive \
+		apt-get -y install bsdtar autoconf autoconf-archive automake libtool pkg-config || die
+
+#RUN cp /usr/include/execinfo.h /opt/mips-unknown-linux-uclibc/mips-unknown-linux-uclibc/sysroot/usr/include/execinfo.h
 
