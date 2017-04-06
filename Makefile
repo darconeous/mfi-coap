@@ -6,10 +6,19 @@ TAR=tar
 #LINKING_FLAGS=--disable-shared --enable-static
 LINKING_FLAGS=--enable-shared --disable-static
 
+LINKING_FLAGS+= CC='$(HOST)-gcc -ffunction-sections -fdata-sections -Wl,-rpath,/var/etc/persistent/lib,-gc-sections'
+
 SYSROOT=$(shell pwd)/build/root
-STD_SYSROOT=/opt/$(HOST)/$(HOST)/sysroot
+STD_SYSROOT=$(shell $(HOST)-ld --print-sysroot)
 
 all: libnyoci-build smcp-build strip-root make-root
+
+# Ignore
+#init-root:
+#	-mkdir -p "$(SYSROOT)"
+#	cd $(STD_SYSROOT) ; for filename in `find -L . -not -type d` ; do if ! test -f "$(SYSROOT)/$$filename" ; then mkdir -p $(SYSROOT)/`dirname $$filename` ; cat $$filename > "$(SYSROOT)/$$filename" ; fi ; done
+#		CC_IGNORE=$(HOST)-gcc\ --sysroot\ $(SYSROOT)\ -Wl,-rpath,/var/etc/persistent/lib \
+#	find $(SYSROOT) -name '*.la' | xargs sed -i~ -e "/libs=/s:/var/etc/persistent:$(SYSROOT)/var/etc/persistent:"
 
 smcp/configure: smcp/configure.ac smcp/doc/Makefile.am smcp/Makefile.am smcp/src/examples/Makefile.am smcp/src/Makefile.am smcp/src/smcp/Makefile.am smcp/src/smcpd/Makefile.am smcp/src/tests/Makefile.am
 	smcp/bootstrap.sh
@@ -53,14 +62,14 @@ build/smcp/config.status: smcp/configure Makefile libnyoci-build
 		$(NULL)
 
 smcp-build: build/smcp/config.status
-	$(MAKE) -C build/smcp
+	$(MAKE) -C build/smcp V=1
 	$(MAKE) -C build/smcp install DESTDIR="$(SYSROOT)"
-	find $(SYSROOT) -name '*.la' | xargs sed -i~ -e "s;/var/etc/persistent;$(SYSROOT)/var/etc/persistent;"
+	find $(SYSROOT) -name '*.la' | xargs sed -i~ -e "/`printf %s $(SYSROOT) | sed y:/:.:`/!s:/var/etc/persistent:$(SYSROOT)/var/etc/persistent:"
 
 libnyoci-build: build/libnyoci/config.status
-	$(MAKE) -C build/libnyoci
+	$(MAKE) -C build/libnyoci V=1
 	$(MAKE) -C build/libnyoci install DESTDIR="$(SYSROOT)"
-	find $(SYSROOT) -name '*.la' | xargs sed -i~ -e "s;/var/etc/persistent;$(SYSROOT)/var/etc/persistent;"
+	find $(SYSROOT) -name '*.la' | xargs sed -i~ -e "/`printf %s $(SYSROOT) | sed y:/:.:`/!s:/var/etc/persistent:$(SYSROOT)/var/etc/persistent:"
 
 strip-root:
 	-find $(SYSROOT) -type f | xargs $(HOST)-strip 2> /dev/null
