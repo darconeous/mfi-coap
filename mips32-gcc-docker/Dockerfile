@@ -11,6 +11,9 @@ RUN apt-get -y update \
 	&& DEBIAN_FRONTEND=noninteractive \
 		apt-get -y install dpkg-dev make patch xz-utils bzip2 file fakeroot wget gperf bison flex texinfo help2man gawk libtool-bin automake ncurses-dev
 
+RUN DEBIAN_FRONTEND=noninteractive \
+		apt-get -y install bsdtar autoconf autoconf-archive automake libtool pkg-config vim less gdb libexpat-dev || die
+
 #COPY crosstool-ng-$CROSSTOOL_NG_VERSION.tar.bz2 /
 #COPY crosstool-ng-$CROSSTOOL_NG_VERSION.tar.bz2.sig /
 
@@ -41,9 +44,6 @@ RUN rm -fr ct-ng-build
 
 RUN DEBIAN_FRONTEND=noninteractive \
 		apt-get -y remove dpkg-dev gperf bison flex ncurses-dev
-
-RUN DEBIAN_FRONTEND=noninteractive \
-		apt-get -y install bsdtar autoconf autoconf-archive automake libtool pkg-config || die
 
 #RUN cp /usr/include/execinfo.h /opt/mips-unknown-linux-uclibc/mips-unknown-linux-uclibc/sysroot/usr/include/execinfo.h
 

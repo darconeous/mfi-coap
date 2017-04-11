@@ -3,15 +3,26 @@
 HOST=mips-unknown-linux-uclibc
 TAR=tar
 
-#LINKING_FLAGS=--disable-shared --enable-static
-LINKING_FLAGS=--enable-shared --disable-static
+COMMON_CONFIGURE_OPTIONS= --host=$(HOST) host_alias=$(HOST)
+COMMON_CONFIGURE_OPTIONS+= --prefix=/var/etc/persistent
+COMMON_CONFIGURE_OPTIONS+= --sbindir=/var/etc/persistent/bin
+COMMON_CONFIGURE_OPTIONS+= --sysconfdir=/etc
+COMMON_CONFIGURE_OPTIONS+= --localstatedir=/var
 
-LINKING_FLAGS+= CC='$(HOST)-gcc -ffunction-sections -fdata-sections -Wl,-rpath,/var/etc/persistent/lib,-gc-sections'
+COMMON_CONFIGURE_OPTIONS+= --disable-shared --enable-static
+#COMMON_CONFIGURE_OPTIONS+= --enable-shared --disable-static
+
+COMMON_CONFIGURE_OPTIONS+= PKG_CONFIG_DIR=
+COMMON_CONFIGURE_OPTIONS+= PKG_CONFIG_LIBDIR=$(SYSROOT)/var/etc/persistent/lib/pkgconfig
+COMMON_CONFIGURE_OPTIONS+= PKG_CONFIG_SYSROOT_DIR=$(SYSROOT)
+COMMON_CONFIGURE_OPTIONS+= CC='$(HOST)-gcc -ffunction-sections -fdata-sections -Wl,-rpath,/var/etc/persistent/lib,-gc-sections'
+COMMON_CONFIGURE_OPTIONS+= CFLAGS='-Os -g'
+#COMMON_CONFIGURE_OPTIONS+= --enable-debug=verbose
 
 SYSROOT=$(shell pwd)/build/root
 STD_SYSROOT=$(shell $(HOST)-ld --print-sysroot)
 
-all: libnyoci-build smcp-build strip-root make-root
+all: libnyoci-build smcp-build make-root
 
 # Ignore
 #init-root:
@@ -31,34 +42,14 @@ build/libnyoci/config.status: libnyoci/configure Makefile
 	cd build/libnyoci && ../../libnyoci/configure \
 		--disable-plugtest \
 		--disable-examples \
-		CFLAGS=-Os \
-		--host=$(HOST) \
-		host_alias=$(HOST) \
-		$(LINKING_FLAGS) \
-		--prefix=/var/etc/persistent \
-		--sbindir=/var/etc/persistent/bin \
-		--sysconfdir=/etc \
-		--localstatedir=/var \
-		PKG_CONFIG_DIR= \
-		PKG_CONFIG_LIBDIR=$(SYSROOT)/var/etc/persistent/lib/pkgconfig \
-		PKG_CONFIG_SYSROOT_DIR=$(SYSROOT) \
+		$(COMMON_CONFIGURE_OPTIONS) \
 		$(NULL)
 
 build/smcp/config.status: smcp/configure Makefile libnyoci-build
 	mkdir -p build/smcp
 	cd build/smcp && ../../smcp/configure \
 		--disable-examples \
-		CFLAGS=-Os \
-		--host=$(HOST) \
-		host_alias=$(HOST) \
-		$(LINKING_FLAGS) \
-		--prefix=/var/etc/persistent \
-		--sbindir=/var/etc/persistent/bin \
-		--sysconfdir=/etc \
-		--localstatedir=/var \
-		PKG_CONFIG_DIR= \
-		PKG_CONFIG_LIBDIR=$(SYSROOT)/var/etc/persistent/lib/pkgconfig \
-		PKG_CONFIG_SYSROOT_DIR=$(SYSROOT) \
+		$(COMMON_CONFIGURE_OPTIONS) \
 		$(NULL)
 
 smcp-build: build/smcp/config.status
@@ -85,6 +76,14 @@ make-root:
 	mkdir -p root
 	$(TAR) -cC $(SYSROOT) var | $(TAR) -xvC root
 	$(TAR) -cC conf-root var | $(TAR) -xvC root
+	#cp $(STD_SYSROOT)/../debug-root/usr/bin/gdbserver root/var/etc/persistent/bin/gdbserver
+	-find root -type f | xargs $(HOST)-strip 2> /dev/null
+	$(RM) -fr root/var/etc/persistent/include
+	-$(RM) -f root/var/etc/persistent/lib/*.la
+	-$(RM) -f root/var/etc/persistent/lib/*.la~
+	-$(RM) -f root/var/etc/persistent/lib/*.a
+	$(RM) -fr root/var/etc/persistent/share/man
+	$(RM) -fr root/var/etc/persistent/lib/pkgconfig
 	(cd root && find . -type f ) > root/var/etc/persistent/mfi-coap-manifest.txt
 	@echo ------
 	@find root -type f | xargs ls --color -lah
