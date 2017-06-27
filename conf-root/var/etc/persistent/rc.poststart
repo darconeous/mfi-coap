@@ -110,7 +110,7 @@ for i in 1 2 3 4 5 6 7 8
 do
 	if [ -f /proc/power/output$i ] ;
 	then (
-		echo '<node "1">'
+		echo '<node "'$i'">'
 		for file in `find /proc/power -name '*'$i -type f | grep -v raw_`
 		do printf '\t<node "%s" "ud_var" "%s" />\n' "`basename "${file}" | sed 's/'$i'$//'`" "${file}"
 		done
