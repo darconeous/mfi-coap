@@ -42,6 +42,15 @@ then
 	crontab -u $USER /etc/crontabs/$USER
 fi
 
+# Fix for problem that causes udhcpd to obliterate ipv6 addresses
+if [ -s "/etc/udhcpc/udhcpc" ]
+then
+	sed -i 's/ip addr flush/ip -4 addr flush/' /etc/udhcpc/udhcpc
+fi
+
+
+
+
 if should_use_ipv6
 then
   echo WIFI_MAC "$WIFI_MAC"
@@ -84,17 +93,15 @@ then (
 	) >> /etc/smcpd.conf
 fi
 
-if [ -d /proc/analog ] ;
-then (
-	echo '<node "analog">'
-	for file in `find /proc/analog -type f`
-	do printf '\t<node "%s" "ud_var" "%s" />\n' "`basename "${file}"`" "${file}"
-	done
-	echo '</node>'
-	) >> /etc/smcpd.conf
-fi
-
-
+#if [ -d /proc/analog ] ;
+#then (
+#	echo '<node "analog">'
+#	for file in `find /proc/analog -type f`
+#	do printf '\t<node "%s" "ud_var" "%s" />\n' "`basename "${file}"`" "${file}"
+#	done
+#	echo '</node>'
+#	) >> /etc/smcpd.conf
+#fi
 
 if [ -d /proc/power ] ;
 then (
@@ -108,10 +115,18 @@ fi
 
 for i in 1 2 3 4 5 6 7 8
 do
-	if [ -f /proc/power/output$i ] ;
+	if [ -f /proc/power/output$i ]
 	then (
 		echo '<node "'$i'">'
 		for file in `find /proc/power -name '*'$i -type f | grep -v raw_`
+		do printf '\t<node "%s" "ud_var" "%s" />\n' "`basename "${file}" | sed 's/'$i'$//'`" "${file}"
+		done
+		echo '</node>'
+		) >> /etc/smcpd.conf
+	elif [ -f /proc/analog/value$i ]
+	then (
+		echo '<node "a'$i'">'
+		for file in `find /proc/analog -name '*'$i -type f | grep -v raw_`
 		do printf '\t<node "%s" "ud_var" "%s" />\n' "`basename "${file}" | sed 's/'$i'$//'`" "${file}"
 		done
 		echo '</node>'

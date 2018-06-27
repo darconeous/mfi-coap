@@ -16,8 +16,11 @@ COMMON_CONFIGURE_OPTIONS+= PKG_CONFIG_DIR=
 COMMON_CONFIGURE_OPTIONS+= PKG_CONFIG_LIBDIR=$(SYSROOT)/var/etc/persistent/lib/pkgconfig
 COMMON_CONFIGURE_OPTIONS+= PKG_CONFIG_SYSROOT_DIR=$(SYSROOT)
 COMMON_CONFIGURE_OPTIONS+= CC='$(HOST)-gcc -ffunction-sections -fdata-sections -Wl,-rpath,/var/etc/persistent/lib,-gc-sections'
-COMMON_CONFIGURE_OPTIONS+= CFLAGS='-Os -g'
-#COMMON_CONFIGURE_OPTIONS+= --enable-debug=verbose
+
+ifeq ($(DEBUG),1)
+COMMON_CONFIGURE_OPTIONS+= --enable-debug=verbose
+make-root: $(SYSROOT)/var/etc/persistent/bin/gdbserver
+endif
 
 SYSROOT=$(shell pwd)/build/root
 STD_SYSROOT=$(shell $(HOST)-ld --print-sysroot)
@@ -71,12 +74,14 @@ strip-root:
 	$(RM) -fr $(SYSROOT)/var/etc/persistent/share/man
 	$(RM) -fr $(SYSROOT)/var/etc/persistent/lib/pkgconfig
 
+$(SYSROOT)/var/etc/persistent/bin/gdbserver: $(STD_SYSROOT)/../debug-root/usr/bin/gdbserver
+	cp $(STD_SYSROOT)/../debug-root/usr/bin/gdbserver $(SYSROOT)/var/etc/persistent/bin/gdbserver
+
 make-root:
 	$(RM) -fr root
 	mkdir -p root
 	$(TAR) -cC $(SYSROOT) var | $(TAR) -xvC root
 	$(TAR) -cC conf-root var | $(TAR) -xvC root
-	#cp $(STD_SYSROOT)/../debug-root/usr/bin/gdbserver root/var/etc/persistent/bin/gdbserver
 	-find root -type f | xargs $(HOST)-strip 2> /dev/null
 	$(RM) -fr root/var/etc/persistent/include
 	-$(RM) -f root/var/etc/persistent/lib/*.la
